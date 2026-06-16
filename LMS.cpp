@@ -32,13 +32,13 @@ public:
 
 class Book {
 private:
-    string bookid;
+    string bookId;
     string title;
     string author;
     string category;
-    int AvailableCount;
-    int TotalCount;
-    int BorrowTimes;
+    int availableCount;
+    int totalCount;
+    int borrowTimes;
 
 public:
     Book(string id, string t, string a, string c, int total,int avail );
@@ -50,7 +50,7 @@ public:
     void InputBook();
     void PrintBook() const;
 
-    string GetBookid() const;
+    string GetBookId() const;
     string GetTitle() const;
     string GetAuthor() const;
     int GetAvailableCount() const;
@@ -64,7 +64,7 @@ public:
 
 class Reader {
 private:
-    string readerid;
+    string readerId;
     string name;
     string phone;
 
@@ -116,18 +116,18 @@ private:
     bool hasReturnDate;
 
 public:
-    BorrowRecord(string rid, string bid, string rderId, const Date& bDate);
+    BorrowRecord(string rid, string bid, string readerId, const Date& bDate);
 
     bool SetReturnDate(const Date& d);
 
-    int GetBorrrowDays() const;
+    int GetBorrowDays() const;
     bool IsOverdue(int maxDays) const;
 
     string GetRecordId() const;
     string GetBookId() const;
     string GetReaderId() const;
     string GetStatus() const;
-    string GetBorrrowDate() const;
+    string GetBorrowDate() const;
     string GetReturnDate() const;
     bool HasReturnDate() const;
     bool IsReturned() const;
@@ -170,4 +170,98 @@ public:
     BorrowRecord* FindRecord(const string& recordId);
     string GenerateRecordId();
 };
+
+//-------------------------------------------------
+// ------------Date成员函数-------------------------
+Date::Date():year(2000),month(01),day(01){}
+Date::Date(int y, int m, int d):year(y),month(m),day(d){}
+
+bool Date::IsValid (int year, int month, int day) {
+    int MonthDays[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+    if ((year % 400 == 0) || (year % 4 == 0 && year % 100 != 0)) {
+        MonthDays[1] = 29;
+    }
+
+    if ( month > 0 && month <= 12 && day > 0 && day <= MonthDays[month-1] ) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool Date::IsValid () const
+{
+    return IsValid(year, month, day);
+}
+
+int Date:: DaysBetween(const Date& other) const {
+    int y1 = GetYear();
+    int m1 = GetMonth();
+    int d1 = GetDay();
+    if (m1 < 3)	y1--, m1 += 12;
+	long long Days1 = 365 * y1 + (y1 >> 2) - y1 / 100 + y1 / 400 + (153 * m1 - 457) / 5 + d1 - 306;
+
+    int y2 = other.GetYear();
+    int m2 = other.GetMonth();
+    int d2 = other.GetDay();
+    if (m2 < 3) y2--, m2 += 12;
+    int Days2 = 365 * y2 + (y2 >> 2) - y2 / 100 + y2 / 400 + (153 * m2 - 457) / 5 + d2 - 306;
+
+    return Days2 - Days1;
+}
+
+bool Date:: operator<(const Date& other) const {
+    if( DaysBetween(other) > 0 ) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool Date:: operator<=(const Date& other) const {
+    if( DaysBetween(other) >= 0 ) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool Date:: operator==(const Date& other) const {
+    if( DaysBetween(other) == 0 ) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+string Date::ToString() const {
+    string y = to_string(year);
+    string m = (month >= 10 ? "" : "0") + to_string(month);
+    string d = (day >= 10 ? "" : "0") + to_string(day);
+    return y + "-" + m + "-" + d;
+}
+
+static Date FromString(const string& s){
+    if (s.length() < 10) return Date();
+    int y = stoi(s.substr(0,4));
+    int m = stoi(s.substr(5,2));
+    int d = stoi(s.substr(8,2));
+    return Date(y,m,d);
+}
+
+int Date:: GetYear() const{
+    return year;
+}
+
+int Date:: GetMonth() const{
+    return month;
+}
+
+int Date:: GetDay() const{
+    return day;
+}
+
+//-----------------------------------------
+//---------------Book成员函数---------------
 
