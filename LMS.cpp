@@ -12,73 +12,125 @@ private:
 public:
     Date();
     Date(int y, int m, int d);
+
     static bool IsValid(int y, int m, int d);
     bool IsValid() const;
-    int BorrowedDays();
+
+    int DaysBetween(const Date& other) const;
+
+    bool operator<(const Date& other) const;
+    bool operator<=(const Date& other) const;
+    bool operator==(const Date& other) const;
+
+    string ToString() const;
+    static Date FromString(const string& s);
+
+    int GetDay() const;
+    int GetMonth() const;
+    int GetYear() const;
 };
 
 class Book {
-public:
+private:
     string bookid;
     string title;
     string author;
     string category;
-    int availableCount;
-    int totalcount;
-    int borrowTimes = 0;
-    Book(string id, string t, string a, string c, int ac, int tc ,int bt ) : bookid(id), title(t), author(a), category(c), availableCount(ac), totalcount(tc), borrowTimes(bt) {}
+    int AvailableCount;
+    int TotalCount;
+    int BorrowTimes;
+
+public:
+    Book(string id, string t, string a, string c, int total,int avail );
     
-    void SetBookData(string id, string t, string a, string c, int ac, int tc ,int bt );
-    void InputBookData();
-    void PrintBookData();
+    bool CanBorrow() const;
+    void BorrowOne();
+    void ReturnOne();
+
+    void InputBook();
+    void PrintBook() const;
+
+    string GetBookid() const;
+    string GetTitle() const;
+    string GetAuthor() const;
+    int GetAvailableCount() const;
+    int GetTotalCount() const;
+    int GetBorrowTimes() const;
+
+    string ToCSV() const;
+    static Book FromCSV(const string& line);
+
 };
 
 class Reader {
-public:
+private:
     string readerid;
     string name;
     string phone;
-    Reader(): readerid(""), name(""), phone("") {}
+
+public:
+    Reader(string id, string n, string tel);
     virtual ~Reader() = default;
 
-    void SetReaderData(string id, string n, string tel);
-    void InputReaderData();
-    void PrintReaderData();
+    virtual int GetMaxBorrowCount() const = 0;
+    virtual int GetMaxBorrowDays() const = 0;
+    virtual string GetTypeName() const = 0;
 
-    virtual bool IsTeacher() const { return false; }
-    virtual bool IsStudent() const { return false; }
+    void InputReader();
+    void PrintReader() const;
+    string ToCSV() const;
 
+    string GetReaderId() const;
+    string GetName() const;
+    string GetPhone() const;
 };
 
 class StudentReader: public Reader {
+public:
+    StudentReader(string id, string n, string tel);
+
+    int GetMaxBorrowCount() const override { return 5; }
+    int GetMaxBorrowDays() const override { return 30; }
+    string GetTypeName() const override { return "学生"; }
 
 };
 
 class TeacherReader: public Reader {
+public:
+    TeacherReader(string id, string n, string tel);
+
+    int GetMaxBorrowCount() const override { return 10; }
+    int GetMaxBorrowDays() const override { return 60; }
+    string GetTypeName() const override { return "教师"; }
 
 };
 
 class BorrowRecord{
 private:
     string recordId;
-    string bookid;
-    string readerid;
+    string bookId;
+    string readerId;
     Date borrowDate;
     Date returnDate;
     string status;
     bool hasReturnDate;
 
 public:
-    BorrowRecord(string rid, string bid, string rderid, Date bDate);
+    BorrowRecord(string rid, string bid, string rderId, const Date& bDate);
 
-    bool SetReturnDate(Date d);
+    bool SetReturnDate(const Date& d);
 
+    int GetBorrrowDays() const;
+    bool IsOverdue(int maxDays) const;
+
+    string GetRecordId() const;
     string GetBookId() const;
     string GetReaderId() const;
     string GetStatus() const;
+    string GetBorrrowDate() const;
+    string GetReturnDate() const;
+    bool HasReturnDate() const;
     bool IsReturned() const;
-    int GetBorrrowDays() const;
-    bool IsOverdue(int maxDays) const;
 
     string ToCSV() const;
     void Print() const;
@@ -87,16 +139,35 @@ public:
 
 class LibrarySystem {
 private:
+    vector<Book> books;
+    vector<Reader*> readers;
+    vector<BorrowRecord> records;
+    int nextRecordId;
 
 public:
+    LibrarySystem();
+    ~LibrarySystem();
+
     void ShowMenu();
+    void Run();
+
     void AddBook();
-    void BookSearch();
+    void SearchBook();
     void DisplayAllBooks();
+
     void AddReader();
-    void Borrow();
-    void Return();
-    void SortBookByPopular();
+
+    void BorrowBook();
+    void ReturnBook();
+
+    void SortBooksByPopularity();
+
     void SaveToFile();
     void LoadFromFile();
+
+    Book* FindBook(const string& bookId);
+    Reader* FindReader(const string& readerId);
+    BorrowRecord* FindRecord(const string& recordId);
+    string GenerateRecordId();
 };
+
