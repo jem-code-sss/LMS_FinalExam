@@ -1,9 +1,13 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <sstream>
+#include <fstream>
+#include <algorithm>
+
 using namespace std;
 
-class Date {
+class Date{
 private:
     int day;
     int month;
@@ -30,7 +34,7 @@ public:
     int GetYear() const;
 };
 
-class Book {
+class Book{
 private:
     string bookId;
     string title;
@@ -41,7 +45,7 @@ private:
     int borrowTimes;
 
 public:
-    Book(string id, string t, string a, string c, int total,int avail );
+    Book(string id, string t, string a, string c, int total,int avail);
     
     bool CanBorrow() const;
     void BorrowOne();
@@ -62,7 +66,7 @@ public:
 
 };
 
-class Reader {
+class Reader{
 private:
     string readerId;
     string name;
@@ -85,7 +89,7 @@ public:
     string GetPhone() const;
 };
 
-class StudentReader: public Reader {
+class StudentReader: public Reader{
 public:
     StudentReader(string id, string n, string tel);
 
@@ -95,7 +99,7 @@ public:
 
 };
 
-class TeacherReader: public Reader {
+class TeacherReader: public Reader{
 public:
     TeacherReader(string id, string n, string tel);
 
@@ -137,7 +141,7 @@ public:
 
 };
 
-class LibrarySystem {
+class LibrarySystem{
 private:
     vector<Book> books;
     vector<Reader*> readers;
@@ -176,26 +180,25 @@ public:
 Date::Date():year(2000),month(01),day(01){}
 Date::Date(int y, int m, int d):year(y),month(m),day(d){}
 
-bool Date::IsValid (int year, int month, int day) {
+bool Date::IsValid (int year, int month, int day){
     int MonthDays[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
-    if ((year % 400 == 0) || (year % 4 == 0 && year % 100 != 0)) {
+    if ((year % 400 == 0) || (year % 4 == 0 && year % 100 != 0)){
         MonthDays[1] = 29;
     }
 
-    if ( month > 0 && month <= 12 && day > 0 && day <= MonthDays[month-1] ) {
+    if ( month > 0 && month <= 12 && day > 0 && day <= MonthDays[month-1] ){
         return true;
-    } else {
+    }else{
         return false;
     }
 }
 
-bool Date::IsValid () const
-{
+bool Date::IsValid () const{
     return IsValid(year, month, day);
 }
 
-int Date:: DaysBetween(const Date& other) const {
+int Date:: DaysBetween(const Date& other) const{
     int y1 = GetYear();
     int m1 = GetMonth();
     int d1 = GetDay();
@@ -211,31 +214,31 @@ int Date:: DaysBetween(const Date& other) const {
     return Days2 - Days1;
 }
 
-bool Date:: operator<(const Date& other) const {
-    if( DaysBetween(other) > 0 ) {
+bool Date:: operator<(const Date& other) const{
+    if( DaysBetween(other) > 0 ){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+bool Date:: operator<=(const Date& other) const{
+    if( DaysBetween(other) >= 0 ){
         return true;
     } else {
         return false;
     }
 }
 
-bool Date:: operator<=(const Date& other) const {
-    if( DaysBetween(other) >= 0 ) {
+bool Date:: operator==(const Date& other) const{
+    if( DaysBetween(other) == 0 ){
         return true;
     } else {
         return false;
     }
 }
 
-bool Date:: operator==(const Date& other) const {
-    if( DaysBetween(other) == 0 ) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-string Date::ToString() const {
+string Date::ToString() const{
     string y = to_string(year);
     string m = (month >= 10 ? "" : "0") + to_string(month);
     string d = (day >= 10 ? "" : "0") + to_string(day);
@@ -265,3 +268,72 @@ int Date:: GetDay() const{
 //-----------------------------------------
 //---------------Book成员函数---------------
 
+Book::Book(string id, string t, string a, string c, int total,int avail): bookId(id), title(t), author(a), category(c), availableCount(avail), totalCount(total) {}
+
+bool Book:: CanBorrow() const{
+    if (availableCount > 0) return true;
+    return false;
+}
+
+void Book:: BorrowOne(){
+    if ( !CanBorrow() ){
+        cout<<"已全部借出！"<<endl;
+        return;
+    }
+    availableCount--;
+    borrowTimes++;
+}
+
+void Book::ReturnOne() {
+    availableCount++;
+}
+
+void Book::InputBook() {
+    cout<<"请输入书号：";       cin>>bookId;
+    cout<<"请输入书名：";       cin>>title;
+    cout<<"请输入作者：";       cin>>author;
+    cout<<"请输入图书类别：";   cin>>category;
+    cout<<"请输入总册数：";     cin>>totalCount;
+    availableCount = totalCount;
+    borrowTimes = 0;
+}
+
+string Book:: GetBookId() const{
+    return bookId;
+}
+
+string Book:: GetTitle() const{
+    return title;
+}
+
+string Book:: GetAuthor() const{
+    return author;
+}
+
+int Book:: GetAvailableCount() const{
+    return availableCount;
+}
+
+int Book:: GetTotalCount() const{
+    return totalCount;
+}
+
+int Book:: GetBorrowTimes() const{
+    return borrowTimes;
+}
+
+string Book:: ToCSV() const{
+    return bookId + "," + title + "," + author + "," + category + ","
+            + to_string(totalCount) + "," + to_string(availableCount) + ","
+            + to_string(borrowTimes);
+}
+
+static Book FromCSV(const string&) {
+
+}
+
+//-------------------------------------------------
+//-------------------Reader成员函数-----------------
+Reader::Reader(string id,string n, string tel): readerId(id), name(n), phone(tel) {}
+int Reader:: GetMaxBorrowCount() const {
+}
