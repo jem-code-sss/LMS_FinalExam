@@ -203,7 +203,7 @@ int Date:: DaysBetween(const Date& other) const{
     int m1 = GetMonth();
     int d1 = GetDay();
     if (m1 < 3)	y1--, m1 += 12;
-	long long Days1 = 365 * y1 + (y1 >> 2) - y1 / 100 + y1 / 400 + (153 * m1 - 457) / 5 + d1 - 306;
+	int Days1 = 365 * y1 + (y1 >> 2) - y1 / 100 + y1 / 400 + (153 * m1 - 457) / 5 + d1 - 306;
 
     int y2 = other.GetYear();
     int m2 = other.GetMonth();
@@ -245,7 +245,7 @@ string Date::ToString() const{
     return y + "-" + m + "-" + d;
 }
 
-static Date FromString(const string& s){
+Date Date::FromString(const string& s){
     if (s.length() < 10) return Date();
     int y = stoi(s.substr(0,4));
     int m = stoi(s.substr(5,2));
@@ -268,11 +268,11 @@ int Date:: GetDay() const{
 //-----------------------------------------
 //---------------Book成员函数---------------
 
-Book::Book(string id, string t, string a, string c, int total,int avail): bookId(id), title(t), author(a), category(c), availableCount(avail), totalCount(total) {}
+Book::Book(string id, string t, string a, string c, int total,int avail)
+: bookId(id), title(t), author(a), category(c), availableCount(avail), totalCount(total) {}
 
 bool Book:: CanBorrow() const{
-    if (availableCount > 0) return true;
-    return false;
+    return availableCount > 0;
 }
 
 void Book:: BorrowOne(){
@@ -296,6 +296,16 @@ void Book::InputBook() {
     cout<<"请输入总册数：";     cin>>totalCount;
     availableCount = totalCount;
     borrowTimes = 0;
+}
+
+void Book::PrintBook() const{
+    cout<<"书号："<<bookId<<endl;
+    cout<<"书名："<<title<<endl;
+    cout<<"作者："<<author<<endl;
+    cout<<"类别:"<<category<<endl;
+    cout<<"总册数："<<totalCount<<endl;
+    cout<<"可借册数："<<availableCount<<endl;
+    cout<<"借阅次数："<<borrowTimes<<endl;
 }
 
 string Book:: GetBookId() const{
@@ -328,12 +338,68 @@ string Book:: ToCSV() const{
             + to_string(borrowTimes);
 }
 
-static Book FromCSV(const string&) {
-
+Book Book::FromCSV(const string& line) {
+    stringstream ss(line);
+    string id, t, a, c;
+    int total, avail, times;
+    return Book(id, t, a, c, total, avail);
 }
 
 //-------------------------------------------------
 //-------------------Reader成员函数-----------------
-Reader::Reader(string id,string n, string tel): readerId(id), name(n), phone(tel) {}
-int Reader:: GetMaxBorrowCount() const {
+Reader::Reader(string id,string n, string tel):readerId(id), name(n), phone(tel) {}
+void Reader::InputReader(){
+    cout<<"请输入读者号：";     cin>>readerId;
+    cout<<"请输入姓名：";       cin>>name;
+    cout<<" 请输入电话：";      cin>>phone;
+}
+
+void Reader::PrintReader() const{
+    cout<<"读者类型："<<GetTypeName()<<endl;
+    cout<<"读者号："<<GetReaderId()<<endl;
+    cout<<"姓名:"<<GetName()<<endl;
+    cout<<"电话："<<GetPhone()<<endl;
+}
+
+string Reader::ToCSV() const{
+    return readerId + "," + name + "," + phone;
+}
+
+string Reader::GetReaderId() const{
+    return readerId;
+}
+
+string Reader::GetName() const{
+    return name;
+}
+
+string Reader::GetPhone() const{
+    return phone;
+}
+
+//-------------------------------------------
+//------------StudentReader成员函数----------
+StudentReader::StudentReader(string id, string n, string tel)
+:Reader(id, n, tel) {}
+
+//-------------------------------------------
+//------------TeacherReader成员函数------------
+TeacherReader::TeacherReader(string id, string n, string tel)
+:Reader(id, n, tel) {}
+
+//------------------------------------------
+//----------BorrowRecord成员函数-------------
+BorrowRecord::BorrowRecord (string rid, string bid, string readerId, const Date& bDate)
+: recordId(rid), bookId(bid),readerId(readerId),
+borrowDate(bDate), status("BORROWED"), hasReturnDate(false) {}
+
+bool BorrowRecord::SetReturnDate(const Date& d){
+    if (d < borrowDate){
+        cout<<"错误归还日期不得早于借阅日期！"<<endl;
+        return false;
+    }
+    returnDate = d;
+    status = "RETURNED";
+    hasReturnDate = true;
+    return true;
 }
