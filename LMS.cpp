@@ -403,3 +403,68 @@ bool BorrowRecord::SetReturnDate(const Date& d){
     hasReturnDate = true;
     return true;
 }
+
+int BorrowRecord::GetBorrowDays() const{
+    if (status == "RETURNED") return borrowDate.DaysBetween(returnDate);
+    return 0;
+}
+
+bool BorrowRecord::IsOverdue(int maxDays) const{
+    if (!hasReturnDate) return false;
+    return GetBorrowDays() > maxDays;
+}
+
+string BorrowRecord::GetRecordId() const{
+    return recordId;
+}
+
+string BorrowRecord::GetBookId() const{
+    return bookId;
+}
+
+string BorrowRecord::GetReaderId() const{
+    return readerId;
+}
+
+string BorrowRecord::GetStatus() const{
+    return status;
+}
+
+string BorrowRecord::GetBorrowDate() const{
+    return borrowDate.ToString();
+}
+
+string BorrowRecord::GetReturnDate() const{
+    if (!hasReturnDate) return "NONE";
+    return returnDate.ToString();
+}
+
+bool BorrowRecord::HasReturnDate() const{
+    return hasReturnDate;
+}   
+
+bool BorrowRecord::IsReturned() const{
+    if (status == "RETURNED"){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+string BorrowRecord::ToCSV()const{
+    return recordId + "," + bookId + ","+ readerId + "," + GetBorrowDate()
+            + "," + GetReturnDate() + "," + GetStatus();
+}
+
+void BorrowRecord::Print() const{
+    cout<<"借阅编号："<<recordId<<endl;
+    cout<<"书籍编号："<<bookId<<endl;
+    cout<<"借阅读者号："<<readerId<<endl;
+    cout<<"借阅日期："<<GetBorrowDate()<<endl;
+    cout<<"归还日期："<<GetReturnDate()<<endl;
+    cout<<"借阅状态："<<status<<endl;
+    cout<<"借阅天数："<<GetBorrowDays()<<"天"<<endl;
+}
+
+//---------------------------------------------------------------
+//--------------------LibrarySystem成员函数-----------------------
