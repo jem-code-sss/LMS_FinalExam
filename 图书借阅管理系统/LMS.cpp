@@ -152,6 +152,9 @@ public:
     LibrarySystem();
     ~LibrarySystem();
 
+    LibrarySystem(const LibrarySystem&) = delete;
+    LibrarySystem& operator=(const LibrarySystem&) = delete;
+
     void ShowMenu();
     void Run();
 
@@ -160,6 +163,7 @@ public:
     void DisplayAllBooks();
 
     void AddReader();
+    void ShowReaderRecords();
 
     void BorrowBook();
     void ReturnBook();
@@ -203,7 +207,7 @@ int Date:: DaysBetween(const Date& other) const{
     int m1 = GetMonth();
     int d1 = GetDay();
     if (m1 < 3)	y1--, m1 += 12;
-	int Days1 = 365 * y1 + (y1 >> 2) - y1 / 100 + y1 / 400 + (153 * m1 - 457) / 5 + d1 - 306;
+	int Days1 = 365 * y1 + (y1 / 4) - y1 / 100 + y1 / 400 + (153 * m1 - 457) / 5 + d1 - 306;
 
     int y2 = other.GetYear();
     int m2 = other.GetMonth();
@@ -269,7 +273,7 @@ int Date:: GetDay() const{
 //---------------Book成员函数---------------
 
 Book::Book(string id, string t, string a, string c, int total,int avail)
-: bookId(id), title(t), author(a), category(c), availableCount(avail), totalCount(total) {}
+: bookId(id), title(t), author(a), category(c), availableCount(avail), totalCount(total), borrowTimes(0) {}
 
 bool Book:: CanBorrow() const{
     return availableCount > 0;
@@ -342,6 +346,7 @@ Book Book::FromCSV(const string& line) {
     stringstream ss(line);
     string id, t, a, c;
     int total, avail, times;
+    getline(ss,field,',');
     return Book(id, t, a, c, total, avail);
 }
 
@@ -351,7 +356,7 @@ Reader::Reader(string id,string n, string tel):readerId(id), name(n), phone(tel)
 void Reader::InputReader(){
     cout<<"请输入读者号：";     cin>>readerId;
     cout<<"请输入姓名：";       cin>>name;
-    cout<<" 请输入电话：";      cin>>phone;
+    cout<<"请输入电话：";      cin>>phone;
 }
 
 void Reader::PrintReader() const{
@@ -405,7 +410,7 @@ bool BorrowRecord::SetReturnDate(const Date& d){
 }
 
 int BorrowRecord::GetBorrowDays() const{
-    if (status == "RETURNED") return borrowDate.DaysBetween(returnDate);
+    if (HasReturnDate) return borrowDate.DaysBetween(returnDate);
     return 0;
 }
 
@@ -444,11 +449,7 @@ bool BorrowRecord::HasReturnDate() const{
 }   
 
 bool BorrowRecord::IsReturned() const{
-    if (status == "RETURNED"){
-        return true;
-    }else{
-        return false;
-    }
+    return status == "RETURNED";
 }
 
 string BorrowRecord::ToCSV()const{
@@ -468,3 +469,230 @@ void BorrowRecord::Print() const{
 
 //---------------------------------------------------------------
 //--------------------LibrarySystem成员函数-----------------------
+LibrarySystem::LibrarySystem(): nextRecordId(1) {}
+
+LibrarySystem::~LibrarySystem(){
+    for (Reader* r : readers){
+        delete r;
+    }
+    readers.clear();
+}
+
+void LibrarySystem::ShowMenu(){
+    cout<<"\n==============================="<<endl;
+    cout<<"     欢迎使用图书借阅管理系统"<<endl;
+    cout<<"1. 添加图书"<<endl;
+    cout<<"2. 显示所有图书"<<endl;
+    cout<<"3. 查询图书"<<endl;
+    cout<<"4. 添加读者"<<endl;
+    cout<<"5. 借书"<<endl;
+    cout<<"6. 还书"<<endl;
+    cout<<"7. 热门图书排序"<<endl;
+    cout<<"8. 读者借阅记录查询"<<endl;
+    cout<<"9. 保存数据到文件"<<endl;
+    cout<<"10.从文件中载入数据"<<endl;
+    cout<<"0. 退出系统"<<endl;
+    cout<<"\n==============================="<<endl;
+    cout<<"请输入选项:(0-10):";
+}
+
+void LibrarySystem::Run(){
+    int choice;
+    while (true){
+        ShowMenu();
+        cin>>choice;
+
+        if (cin.fail()){
+            cin.clear();
+            cin.ignore(10000,'\n');
+            cout<<"输入无效，请输入数字 0-10。"<<endl;
+            continue;
+        }
+        switch (choice)
+        {
+            case 1:     AddBook();                  break;
+            case 2:     DisplayAllBooks();          break;
+            case 3:     SearchBook();               break;
+            case 4:     AddReader();                break;
+            case 5:     BorrowBook();               break;
+            case 6:     ReturnBook();               break;
+            case 7:     SortBooksByPopularity();    break;
+            case 8:     ShowReaderRecords();        break;
+            case 9:     SaveToFile();               break;
+            case 10:    LoadFromFile();             break;
+            case 0:     cout<<"感谢使用，再见！"<<endl; return;
+
+            default:
+            cout<<"无效选项，请重新输入(0-10)。"<<endl;
+        }
+    }
+}
+
+void LibrarySystem::AddBook(){
+    string id, title, author, category;
+    int totalCount, availableCount;
+    bool flag;
+    do{
+        flag = true;
+        cout<<"请输入书号：";
+        cin>>id;
+
+        if (FindBook(id) != nullptr){
+        cout<<"错误：书号"<<id<<"已存在，添加失败！"<<endl;
+        flag = false;
+        }
+    }while(!flag);
+
+    do{
+        flag = true;
+        cout<<"请输入书名：";
+        cin>>title;
+
+        if (title.empty()){
+        cout<<"错误：书名不能为空，添加失败！"<<endl;
+        flag = false;
+        }
+    }while(!flag);
+
+    
+    cout<<"请输入作者:";
+    cin>>author;
+
+    cout<<"请输入图书类别：";
+    cin>>category;
+
+    do{
+        flag = true;
+        cout<<"请输入总册数：";
+        cin>>totalCount;
+        if (totalCount<=0){
+        cout<<"错误：总册数必须大于0，添加失败！"<<endl;
+        flag = false;
+        }
+    }while (!flag);
+    
+    do{
+        flag = true;
+        cout<<"请输入可借册数：";
+        cin>>availableCount;
+        if (availableCount > totalCount) {
+        cout << "错误：可借册数（" << availableCount
+             << "）不能大于总册数（" << totalCount << "），添加失败！" << endl;
+        flag = false;
+        }
+    }while(!flag); 
+    books.push_back(Book(id, title, author, category, totalCount, availableCount));
+    cout<<"添加成功！书号："<<id<<"书名："<<title<<endl;
+}
+
+void LibrarySystem::SearchBook(){
+    int choice;
+    cout<<"请选择查询方式："<<endl;
+    cout<<"1 - 按书号查询"<<endl;
+    cout<<"2 - 按书名查询"<<endl;
+    cout<<"请输入：";
+    cin>>choice;
+
+    if (cin.fail()|| (choice != 1 && choice != 2)){
+        cin.clear();
+        cin.ignore(10000,'\n');
+        cout<<"输入无效，请选择 1 或 2 。"<<endl;
+        return;
+    }
+
+    bool found = false;
+    
+    if (choice == 1){
+        string id;
+        cout<<"请输入书号：";
+        cin>>id;
+
+        Book* book = FindBook(id);
+        if (book != nullptr){
+            book->PrintBook();
+            found = true;
+        }
+    }else{
+        string keyword;
+        cout<<"请输入书名关键字：";
+        cin>>keyword;
+
+        for(auto& book: books){
+            if(book.GetTitle().find(keyword) != string::npos){
+                book.PrintBook();
+                cout<<"--------------------------"<<endl;
+                found = true;
+            }
+        }
+    }
+
+    if (!found){
+        cout<<"未找到匹配的图书。"<<endl;
+    }
+}
+
+void LibrarySystem::DisplayAllBooks(){
+    if(books.empty()){
+        cout<<"暂无图书数据。"<<endl;
+        return;
+    }
+
+    cout<<"\n============== 图书列表（共"<<books.size()<<"本） =============="<<endl;
+    for(auto& book : books){
+        book.PrintBook();
+        cout<<"------------------------------------"<<endl;
+    }
+}
+
+void LibrarySystem::AddReader(){
+    char type;
+    cout<<"请输入要输入的读者信息类型（T-教师，S-学生）：";
+    cin>>type;
+    cin.ignore();
+
+    if (type == 'T' || type == 't'){
+        Reader* r = new TeacherReader("","","");
+        r->InputReader();
+        
+        readers.push_back(r);
+    }else if(type == 'S' || type == 's'){
+        Reader* r = new StudentReader("","","");
+        r->InputReader();
+        readers.push_back(r);
+    }else{
+        cout<<"类型无效";return;
+    }
+
+}
+
+void LibrarySystem::BorrowBook(){
+
+}
+
+void LibrarySystem::ReturnBook(){
+
+}
+
+void LibrarySystem::SortBooksByPopularity(){
+
+}
+
+void LibrarySystem::SaveToFile(){
+    
+}
+
+Book* LibrarySystem::FindBook(const string& bookId){
+
+}
+
+Reader* LibrarySystem:: FindReader(const string& readerId){
+
+}
+
+BorrowRecord* LibrarySystem::FindRecord(const string& recordId){
+
+}
+
+string LibrarySystem:: GenerateRecordId(){
+
+}
