@@ -1,7 +1,11 @@
 #include <iostream>
-//#include "Library_Management_System.h"
+#include "LMS.h"
 using namespace std;
 
 int main() {
-
+    LibrarySystem sys;
+    sys.LoadFromFile();
+    sys.Run();
+    sys.SaveToFile();
+    return 0;
 }

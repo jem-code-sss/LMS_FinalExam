@@ -1,183 +1,10 @@
 #include <iostream>
-#include <vector>
-#include <string>
 #include <sstream>
 #include <fstream>
 #include <algorithm>
+#include "LMS.h"
 
 using namespace std;
-
-class Date{
-private:
-    int day;
-    int month;
-    int year;
-
-public:
-    Date();
-    Date(int y, int m, int d);
-
-    static bool IsValid(int y, int m, int d);
-    bool IsValid() const;
-
-    int DaysBetween(const Date& other) const;
-
-    bool operator<(const Date& other) const;
-    bool operator<=(const Date& other) const;
-    bool operator==(const Date& other) const;
-
-    string ToString() const;
-    static Date FromString(const string& s);
-
-    int GetDay() const;
-    int GetMonth() const;
-    int GetYear() const;
-};
-
-class Book{
-private:
-    string bookId;
-    string title;
-    string author;
-    string category;
-    int availableCount;
-    int totalCount;
-    int borrowTimes;
-
-public:
-    Book(string id, string t, string a, string c, int total,int avail);
-    
-    bool CanBorrow() const;
-    void BorrowOne();
-    void ReturnOne();
-
-    void InputBook();
-    void PrintBook() const;
-
-    string GetBookId() const;
-    string GetTitle() const;
-    string GetAuthor() const;
-    int GetAvailableCount() const;
-    int GetTotalCount() const;
-    int GetBorrowTimes() const;
-
-    string ToCSV() const;
-    static Book FromCSV(const string& line);
-
-};
-
-class Reader{
-private:
-    string readerId;
-    string name;
-    string phone;
-
-public:
-    Reader(string id, string n, string tel);
-    virtual ~Reader() = default;
-
-    virtual int GetMaxBorrowCount() const = 0;
-    virtual int GetMaxBorrowDays() const = 0;
-    virtual string GetTypeName() const = 0;
-
-    void InputReader();
-    void PrintReader() const;
-    string ToCSV() const;
-
-    string GetReaderId() const;
-    string GetName() const;
-    string GetPhone() const;
-};
-
-class StudentReader: public Reader{
-public:
-    StudentReader(string id, string n, string tel);
-
-    int GetMaxBorrowCount() const override { return 5; }
-    int GetMaxBorrowDays() const override { return 30; }
-    string GetTypeName() const override { return "学生"; }
-
-};
-
-class TeacherReader: public Reader{
-public:
-    TeacherReader(string id, string n, string tel);
-
-    int GetMaxBorrowCount() const override { return 10; }
-    int GetMaxBorrowDays() const override { return 60; }
-    string GetTypeName() const override { return "教师"; }
-
-};
-
-class BorrowRecord{
-private:
-    string recordId;
-    string bookId;
-    string readerId;
-    Date borrowDate;
-    Date returnDate;
-    string status;
-    bool hasReturnDate;
-
-public:
-    BorrowRecord(string rid, string bid, string readerId, const Date& bDate);
-
-    bool SetReturnDate(const Date& d);
-
-    int GetBorrowDays() const;
-    bool IsOverdue(int maxDays) const;
-
-    string GetRecordId() const;
-    string GetBookId() const;
-    string GetReaderId() const;
-    string GetStatus() const;
-    string GetBorrowDate() const;
-    string GetReturnDate() const;
-    bool HasReturnDate() const;
-    bool IsReturned() const;
-
-    string ToCSV() const;
-    void Print() const;
-
-};
-
-class LibrarySystem{
-private:
-    vector<Book> books;
-    vector<Reader*> readers;
-    vector<BorrowRecord> records;
-    int nextRecordId;
-
-public:
-    LibrarySystem();
-    ~LibrarySystem();
-
-    LibrarySystem(const LibrarySystem&) = delete;
-    LibrarySystem& operator=(const LibrarySystem&) = delete;
-
-    void ShowMenu();
-    void Run();
-
-    void AddBook();
-    void SearchBook();
-    void DisplayAllBooks();
-
-    void AddReader();
-    void ShowReaderRecords();
-
-    void BorrowBook();
-    void ReturnBook();
-
-    void SortBooksByPopularity();
-
-    void SaveToFile();
-    void LoadFromFile();
-
-    Book* FindBook(const string& bookId);
-    Reader* FindReader(const string& readerId);
-    BorrowRecord* FindRecord(const string& recordId);
-    string GenerateRecordId();
-};
 
 //-------------------------------------------------
 // ------------Date成员函数-------------------------
@@ -213,7 +40,7 @@ int Date:: DaysBetween(const Date& other) const{
     int m2 = other.GetMonth();
     int d2 = other.GetDay();
     if (m2 < 3) y2--, m2 += 12;
-    int Days2 = 365 * y2 + (y2 >> 2) - y2 / 100 + y2 / 400 + (153 * m2 - 457) / 5 + d2 - 306;
+    int Days2 = 365 * y2 + (y2 / 4) - y2 / 100 + y2 / 400 + (153 * m2 - 457) / 5 + d2 - 306;
 
     return Days2 - Days1;
 }
@@ -272,8 +99,8 @@ int Date:: GetDay() const{
 //-----------------------------------------
 //---------------Book成员函数---------------
 
-Book::Book(string id, string t, string a, string c, int total,int avail)
-: bookId(id), title(t), author(a), category(c), availableCount(avail), totalCount(total), borrowTimes(0) {}
+Book::Book(string id, string t, string a, string c, int total,int avail, int times)
+: bookId(id), title(t), author(a), category(c), availableCount(avail), totalCount(total), borrowTimes(times) {}
 
 bool Book:: CanBorrow() const{
     return availableCount > 0;
@@ -345,9 +172,19 @@ string Book:: ToCSV() const{
 Book Book::FromCSV(const string& line) {
     stringstream ss(line);
     string id, t, a, c;
-    int total, avail, times;
-    getline(ss,field,',');
-    return Book(id, t, a, c, total, avail);
+    string totalStr, availStr, timesStr;
+    getline(ss,id,',');
+    getline(ss,t,',');
+    getline(ss,a,',');
+    getline(ss,c,',');
+    getline(ss,totalStr,',');
+    getline(ss,availStr,',');
+    getline(ss,timesStr,',');
+
+    int total = stoi(totalStr);
+    int avail = stoi(availStr);
+    int times = stoi(timesStr);
+    return Book(id, t, a, c, total, avail, times);
 }
 
 //-------------------------------------------------
@@ -367,7 +204,7 @@ void Reader::PrintReader() const{
 }
 
 string Reader::ToCSV() const{
-    return readerId + "," + name + "," + phone;
+    return readerId + "," + name + "," + phone + "," + GetTypeName();
 }
 
 string Reader::GetReaderId() const{
@@ -410,7 +247,7 @@ bool BorrowRecord::SetReturnDate(const Date& d){
 }
 
 int BorrowRecord::GetBorrowDays() const{
-    if (HasReturnDate) return borrowDate.DaysBetween(returnDate);
+    if (hasReturnDate) return borrowDate.DaysBetween(returnDate);
     return 0;
 }
 
@@ -650,49 +487,373 @@ void LibrarySystem::AddReader(){
     cin>>type;
     cin.ignore();
 
+    if (type != 'T' && type != 't' && type != 'S' && type != 's'){
+        cout<<"类型无效！"<<endl;   return;
+    }
+
+    Reader* r = nullptr;
     if (type == 'T' || type == 't'){
-        Reader* r = new TeacherReader("","","");
-        r->InputReader();
-        
-        readers.push_back(r);
-    }else if(type == 'S' || type == 's'){
-        Reader* r = new StudentReader("","","");
-        r->InputReader();
-        readers.push_back(r);
+        r = new TeacherReader("","","");
     }else{
-        cout<<"类型无效";return;
+        r = new StudentReader("","","");
+    }
+    
+    r->InputReader();
+    if (FindReader(r->GetReaderId()) != nullptr){
+        cout<<"错误：读者号"<<r->GetReaderId()<<"已存在！"<<endl;
+        delete r;
+        return;
+    }
+
+    readers.push_back(r);
+    cout<<"添加成功！读者号："<<r->GetReaderId()<<"姓名："<<r->GetName()<<endl;
+}
+
+void LibrarySystem:: ShowReaderRecords(){
+    string readerId;
+    cout<<"请输入读者号：";
+    cin>>readerId;
+
+    Reader* reader = FindReader(readerId);
+    if (reader == nullptr){
+        cout<<"错误：读者号"<<readerId<<"不存在！"<<endl;
+        return;
+    }
+
+    cout<<"\n====== 读者信息 ======"<<endl;
+    reader->PrintReader();
+    cout<<"最大可借："<<reader->GetMaxBorrowCount()<<"本"<<endl;
+    cout<<"借阅期限："<<reader->GetMaxBorrowDays()<<"天"<<endl;
+
+    cout<<"\n====== 借阅记录 ======"<<endl;
+    bool found = false;
+    for (auto& rec: records){
+        if (rec.GetReaderId() == readerId){
+            rec.Print();
+            cout<<"----------------------------"<<endl;
+            found = true;
+        }
+    }
+    if (!found){
+        cout<<"暂无借阅记录。"<<endl;
+    }
+}
+
+void LibrarySystem::BorrowBook(){
+    string bookId,readerId,dateStr;
+
+//----------- 1. 查找图书 --------------
+    cout<<"请输入要借阅的图书书号："<<endl;
+    cin>>bookId;
+
+    Book* book = FindBook(bookId);
+    if (book == nullptr){
+        cout<<"错误：书号 "<<bookId<<" 不存在！"<<endl;
+        return;
+    }
+    cout<<"请确认图书信息："<<endl;
+    book->PrintBook();
+    
+//----------- 2. 查找读者 --------------
+
+    cout<<"请输入读者号"<<endl;
+    cin>>readerId;
+    Reader* reader = FindReader(readerId);
+    if (reader == nullptr){
+        cout<<"错误：读者号 "<<readerId<<" 不存在！"<<endl;
+        return;
+    }
+    cout<<"读者："<<reader->GetTypeName()<<" "<<reader->GetName()<<endl;
+
+//----------- 3. 库存检查 --------------
+
+    if (!book->CanBorrow()){
+        cout<<"错误：该书已全部借出！"<<endl;   return;
+    }
+
+//----------- 4. 检查借阅上限 --------------
+
+    int currentBorrowed = 0;
+    for (auto& rec: records){
+        if (rec.GetReaderId() == readerId && !rec.IsReturned()){
+            currentBorrowed++;
+        }
+    }
+    int maxCount = reader->GetMaxBorrowCount();
+    if (currentBorrowed >= maxCount){
+        cout<<"错误："<<reader->GetTypeName()
+            <<"最多可借"<<maxCount<<"本，当前已借"
+            <<currentBorrowed<<"本！"<<endl;
+        return;
+    }
+
+//----------- 5. 日期输入与校验 --------------
+
+    cout<<"请输入借阅日期（格式：yyyy-mm-dd）：" ;
+    cin>>dateStr;
+
+    Date borrowDate = Date::FromString(dateStr);
+    if (!borrowDate.IsValid()){
+        cout<<"错误：日期格式不正确或不存在！"<<endl;
+        return;
+    }
+
+//----------- 6. 创建借阅记录 --------------
+
+    string recordId = GenerateRecordId();
+    records.push_back(BorrowRecord(recordId, bookId, readerId, borrowDate));
+    book->BorrowOne();
+
+    cout<<"借书成功！"<<endl;
+    cout<<"记录号："<<recordId<<endl;
+    cout<<"书号："<<bookId<<" 书名："<< book->GetTitle()<<endl;
+    cout<<"借阅日期："<<borrowDate.ToString()<<endl;
+    cout<<"应还期限："<<reader->GetMaxBorrowDays()<<"天"<<endl;
+}
+
+void LibrarySystem::ReturnBook(){
+    string bookId,readerId,dateStr;
+    cout<<"请输入要归还的图书书号："<<endl;
+    cin>>bookId;
+
+    Book* book = FindBook(bookId);
+    if (book == nullptr){
+        cout<<"错误：书号 "<<bookId<<" 不存在！"<<endl;
+        return;
+    }
+    book->PrintBook();
+    
+//----------- 2. 查找读者 --------------
+
+    cout<<"请输入读者号"<<endl;
+    cin>>readerId;
+    Reader* reader = FindReader(readerId);
+    if (reader == nullptr){
+        cout<<"错误：读者号 "<<readerId<<" 不存在！"<<endl;
+        return;
+    }
+
+//----------- 3. 查找借阅记录 --------------
+    BorrowRecord* targetRecord = nullptr;
+    for (auto& rec: records){
+        if (rec.GetBookId() == bookId &&
+            rec.GetReaderId() == readerId &&
+            !rec.IsReturned()){
+                targetRecord = &rec;
+                break;
+            }
+    }
+
+    if (targetRecord == nullptr){
+        cout<<"错误：未找到读者"<<reader->GetName()
+            <<"对书号"<<bookId<<"的未归还借阅记录！"<<endl;
+        return;
+    }
+    cout<<"借阅记录如下："<<endl;
+    targetRecord->Print();
+
+//----------- 4. 输入并校验归还日期 --------------
+
+    cout<<"请输入归还日期（格式：yyyy-mm-dd）：" ;
+    cin>>dateStr;
+
+    Date returnDate = Date::FromString(dateStr);
+    if (!returnDate.IsValid()){
+        cout<<"错误：日期格式不正确或不存在！"<<endl;
+        return;
+    }
+
+//----------- 5. 归还 --------------
+
+    if (!targetRecord->SetReturnDate(returnDate)) return;
+    book->ReturnOne();
+
+//----------- 6. 显示 --------------
+    int days = targetRecord->GetBorrowDays();
+    int maxDays = reader->GetMaxBorrowDays();
+
+    cout<<"还书成功！"<<endl;
+    cout<<"记录号："<<targetRecord->GetRecordId()<<endl;
+    cout<<"借阅天数："<<days<<"天"<<endl;
+
+    if (targetRecord->IsOverdue(maxDays)){
+        cout<<"已逾期！逾期"<<(days - maxDays)<<"天"<<endl;
+    }else{
+        cout<<"剩余"<<(maxDays - days)<<"天"<<endl;
     }
 
 }
 
-void LibrarySystem::BorrowBook(){
-
-}
-
-void LibrarySystem::ReturnBook(){
-
-}
-
 void LibrarySystem::SortBooksByPopularity(){
-
+    sort(books.begin() ,books.end(), [](const Book& a,const Book& b){
+        return a.GetBorrowTimes() > b.GetBorrowTimes();
+    });
+    cout<<"图书已按照热门程度排序："<<endl;
+    DisplayAllBooks();
 }
 
 void LibrarySystem::SaveToFile(){
-    
+//--------------1. books.csv ---------------
+    ofstream fbooks("books.csv");
+    if (!fbooks.is_open()){
+        cout<<"错误：无法创建 books.csv！"<<endl;
+        return;
+    }
+    fbooks<<"bookId,title,author,category,totalCount,availableCount,borrowTimes"<<endl;
+    for (auto& book:books){
+        fbooks<<book.ToCSV()<<endl;
+    }
+    fbooks.close();
+    cout<<"已保存"<<books.size()<<"本图书到books.csv"<<endl;
+
+//--------------2. readers.csv ---------------
+    ofstream freaders("readers.csv");
+    if (!freaders.is_open()){
+        cout<<"错误：无法创建 readers.csv！"<<endl;
+        return;
+    }
+    freaders<<"readerId,name,phone,type"<<endl;
+    for (auto* r: readers){
+        freaders<<r->ToCSV()<<endl;
+    }
+    freaders.close();
+    cout<<"已保存"<<readers.size()<<"位读者到readers.csv"<<endl;
+
+//--------------3. borrow_records.csv ---------------
+    ofstream frecords("borrow_records.csv");
+    if (!frecords.is_open()){
+        cout<<"错误：无法创建 borrow_records.csv！"<<endl;
+        return;
+    }
+    frecords<<"recordId,bookId,readerId,borrowDate,returnDate,status"<<endl;
+    for (auto& rec: records){
+        frecords<<rec.ToCSV()<<endl;
+    }
+    frecords.close();
+    cout<<"已保存"<<records.size()<<"条借阅记录到borrow_records.csv"<<endl;
+
+    cout<<"数据全部保存完毕！"<<endl;
+}
+
+void LibrarySystem:: LoadFromFile(){
+    for (Reader* r: readers) delete r;
+    readers.clear();
+    books.clear();
+    records.clear();
+
+    string line;
+    int loadBooks = 0, loadReaders = 0, loadRecords = 0;
+
+//----------- 1. 载入 books.csv -----------
+    ifstream fbooks("books.csv");
+    if (!fbooks.is_open()){
+        cout<<"警告：未找到 books.csv，跳过图书载入。"<<endl;
+    }else{
+        getline(fbooks,line);
+        while (getline(fbooks,line)){
+            if (line.empty()) continue;
+            books.push_back(Book::FromCSV(line));
+            loadBooks++;
+        }
+        fbooks.close();
+        cout<<"已载入"<<loadBooks<<"本图书"<<endl;
+    }
+
+//----------- 2. 载入 readers.csv -----------
+    ifstream freaders("readers.csv");
+    if (!freaders.is_open()){
+        cout<<"警告：未找到 readers.csv，跳过读者载入。"<<endl;
+    }else{
+        getline(freaders,line);
+        while (getline(freaders,line)){
+            if (line.empty()) continue;
+
+            stringstream ss(line);
+            string id, name, phone, type;
+            getline(ss,id,',');
+            getline(ss,name,',');
+            getline(ss,phone,',');
+            getline(ss,type,',');
+
+            if (type == "教师"){
+                readers.push_back(new TeacherReader(id, name, phone));
+            }else{
+                readers.push_back(new StudentReader(id, name, phone));
+            }
+            loadReaders++;
+        }
+        freaders.close();
+        cout<<"已载入"<<loadReaders<<"位读者"<<endl;
+    }
+
+//----------- 3. 载入 borrow_records.csv -----------
+    ifstream frecords("borrow_records.csv");
+    if (!frecords.is_open()){
+        cout<<"警告：未找到 borrow_records.csv，跳过记录载入。"<<endl;
+    }else{
+        getline(frecords,line);
+        int maxId = 0;
+        while (getline(frecords,line)){
+            if (line.empty()) continue;
+
+            stringstream ss(line);
+            string rid, bid, readerId, borrowStr, returnStr, status;
+            getline(ss,rid,',');
+            getline(ss,bid,',');
+            getline(ss,readerId,',');
+            getline(ss,borrowStr,',');
+            getline(ss,returnStr,',');
+            getline(ss,status,',');
+
+            Date borrowDate = Date::FromString(borrowStr);
+            BorrowRecord rec(rid, bid, readerId, borrowDate);
+
+            if (returnStr != "NONE"){
+                Date retDate = Date::FromString(returnStr);
+                rec.SetReturnDate(retDate);
+            }
+
+            records.push_back(rec);
+
+            string numStr = rid.substr(2);
+            int num = stoi(numStr);
+            if (num > maxId) maxId = num;
+
+            loadRecords++;
+        }
+        frecords.close();
+        nextRecordId = maxId + 1;
+        cout<<"已载入"<<loadRecords<<"条借阅记录"<<endl;
+    }
+
+    cout<<"数据载入完毕！"<<endl;
 }
 
 Book* LibrarySystem::FindBook(const string& bookId){
-
+    for(auto& book: books){
+        if(book.GetBookId() == bookId) return &book;
+    }
+    return nullptr;
 }
 
 Reader* LibrarySystem:: FindReader(const string& readerId){
-
+    for(auto& r: readers){
+        if(r->GetReaderId() == readerId) return r;
+    }
+    return nullptr;
 }
 
 BorrowRecord* LibrarySystem::FindRecord(const string& recordId){
-
+    for(auto& rec: records){
+        if(rec.GetRecordId() == recordId) return &rec; 
+    }
+    return nullptr;
 }
 
 string LibrarySystem:: GenerateRecordId(){
-
+    int len = (int)to_string(nextRecordId).length();
+    int zeros = (3 - len > 0) ? (3 - len) : 0;
+    string id = "BR" + string(zeros,'0') + to_string(nextRecordId);
+    nextRecordId++;
+    return id;
 }
