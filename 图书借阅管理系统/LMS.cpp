@@ -174,14 +174,10 @@ Book Book::FromCSV(const string& line) {
     getline(ss,availStr,',');
     getline(ss,timesStr,',');
 
-    try{
-        int total = stoi(totalStr);
-        int avail = stoi(availStr);
-        int times = stoi(timesStr);
-        return Book(id, t, a, c, total, avail, times);
-    }catch(...){
-        return Book("ERROR","","","",0,0,0);
-    }
+    int total = stoi(totalStr);
+    int avail = stoi(availStr);
+    int times = stoi(timesStr);
+    return Book(id, t, a, c, total, avail, times);
     
 }
 
@@ -442,7 +438,10 @@ void LibrarySystem::AddBook(){
         }
     }while(!flag); 
     books.push_back(Book(id, title, author, category, totalCount, availableCount));
-    cout<<"添加成功！书号："<<id<<"书名："<<title<<endl;
+    cout<<"添加成功！"<<endl;
+    cout<<"书号："<<id<<endl;
+    cout<<"书名："<<title<<endl;
+    cin.ignore();
 }
 
 void LibrarySystem::SearchBook(){
@@ -529,7 +528,9 @@ void LibrarySystem::AddReader(){
     }
 
     readers.push_back(r);
-    cout<<"添加成功！读者号："<<r->GetReaderId()<<"姓名："<<r->GetName()<<endl;
+    cout<<"添加成功！"<<endl;
+    cout<<"读者号："<<r->GetReaderId()<<endl;
+    cout<<"姓名："<<r->GetName()<<endl;
 }
 
 void LibrarySystem:: ShowReaderRecords(){
@@ -766,20 +767,32 @@ void LibrarySystem:: LoadFromFile(){
 
     string line;
     int loadBooks = 0, loadReaders = 0, loadRecords = 0;
-
+    int skipBooks = 0, skipReaders = 0, skipRecords = 0;
 //----------- 1. 载入 books.csv -----------
     ifstream fbooks("books.csv");
     if (!fbooks.is_open()){
         cout<<"警告：未找到 books.csv，跳过图书载入。"<<endl;
     }else{
         getline(fbooks,line);
+        int lineNum = 1;
         while (getline(fbooks,line)){
+            lineNum++;
             if (line.empty()) continue;
-            books.push_back(Book::FromCSV(line));
-            loadBooks++;
+            try{
+                books.push_back(Book::FromCSV(line));
+                loadBooks++;
+            } catch (...){
+                skipBooks++;
+                cout<<"警告:book.csv 第 "<<lineNum<<" 行格式异常，已跳过。"<<endl;
+                cout<<"内容："<<line<<endl;
+            }
         }
         fbooks.close();
-        cout<<"已载入"<<loadBooks<<"本图书"<<endl;
+        cout<<"已载入"<<loadBooks<<"本图书";
+        if (skipBooks > 0) {
+            cout<<"，跳过"<<skipBooks<<" 条异常行";
+        }
+        cout<<endl;
     }
 
 //----------- 2. 载入 readers.csv -----------
@@ -788,25 +801,38 @@ void LibrarySystem:: LoadFromFile(){
         cout<<"警告：未找到 readers.csv，跳过读者载入。"<<endl;
     }else{
         getline(freaders,line);
+        int lineNum = 1;
         while (getline(freaders,line)){
+            lineNum++;
             if (line.empty()) continue;
+            try{
+                stringstream ss(line);
+                string id, name, phone, type;
+                getline(ss,id,',');
+                getline(ss,name,',');
+                getline(ss,phone,',');
+                getline(ss,type,',');
 
-            stringstream ss(line);
-            string id, name, phone, type;
-            getline(ss,id,',');
-            getline(ss,name,',');
-            getline(ss,phone,',');
-            getline(ss,type,',');
-
-            if (type == "教师"){
-                readers.push_back(new TeacherReader(id, name, phone));
-            }else{
-                readers.push_back(new StudentReader(id, name, phone));
+                if (type == "教师"){
+                    readers.push_back(new TeacherReader(id, name, phone));
+                }else if (type == "学生"){
+                    readers.push_back(new StudentReader(id, name, phone));
+                }else{
+                    throw runtime_error("未知读者类型：" + type);
+                }
+                loadReaders++;
+            }catch (...){
+                skipReaders++;
+                cout<<"警告：readers.csv 第 "<<lineNum<<" 行格式异常，已跳过。";
+                cout<<"内容："<<line<<endl;
             }
-            loadReaders++;
         }
         freaders.close();
-        cout<<"已载入"<<loadReaders<<"位读者"<<endl;
+        cout<<"已载入"<<loadReaders<<"位读者";
+        if (skipReaders > 0) {
+            cout<<"，跳过"<<skipReaders<<" 条异常行";
+        }
+        cout<<endl;
     }
 
 //----------- 3. 载入 borrow_records.csv -----------
@@ -815,38 +841,49 @@ void LibrarySystem:: LoadFromFile(){
         cout<<"警告：未找到 borrow_records.csv，跳过记录载入。"<<endl;
     }else{
         getline(frecords,line);
+        int lineNum = 1;
         int maxId = 0;
         while (getline(frecords,line)){
+            lineNum++;
             if (line.empty()) continue;
+            try{
+                stringstream ss(line);
+                string rid, bid, readerId, borrowStr, returnStr, status;
+                getline(ss,rid,',');
+                getline(ss,bid,',');
+                getline(ss,readerId,',');
+                getline(ss,borrowStr,',');
+                getline(ss,returnStr,',');
+                getline(ss,status,',');
 
-            stringstream ss(line);
-            string rid, bid, readerId, borrowStr, returnStr, status;
-            getline(ss,rid,',');
-            getline(ss,bid,',');
-            getline(ss,readerId,',');
-            getline(ss,borrowStr,',');
-            getline(ss,returnStr,',');
-            getline(ss,status,',');
+                Date borrowDate = Date::FromString(borrowStr);
+                BorrowRecord rec(rid, bid, readerId, borrowDate);
 
-            Date borrowDate = Date::FromString(borrowStr);
-            BorrowRecord rec(rid, bid, readerId, borrowDate);
+                if (returnStr != "NONE"){
+                    Date retDate = Date::FromString(returnStr);
+                    rec.SetReturnDate(retDate);
+                }
 
-            if (returnStr != "NONE"){
-                Date retDate = Date::FromString(returnStr);
-                rec.SetReturnDate(retDate);
-            }
+                records.push_back(rec);
 
-            records.push_back(rec);
+                string numStr = rid.substr(2);
+                int num = stoi(numStr);
+                if (num > maxId) maxId = num;
 
-            string numStr = rid.substr(2);
-            int num = stoi(numStr);
-            if (num > maxId) maxId = num;
-
-            loadRecords++;
-        }
+                loadRecords++;
+                }catch (...) {
+                skipRecords++;
+                cout<<"警告：borrow_records.csv 第 "<<lineNum<<" 行格式异常，已跳过。";
+                cout<<"内容："<<line<<endl;
+                }
+        } 
         frecords.close();
         nextRecordId = maxId + 1;
-        cout<<"已载入"<<loadRecords<<"条借阅记录"<<endl;
+        cout<<"已载入"<<loadRecords<<"条借阅记录";
+        if (skipRecords > 0){
+            cout<<"，跳过"<<skipRecords<<" 条异常行";
+        }
+        cout<<endl;
     }
 
     cout<<"数据载入完毕！"<<endl;
