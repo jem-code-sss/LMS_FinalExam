@@ -335,9 +335,10 @@ void LibrarySystem::ShowMenu(){
 
 void LibrarySystem::Run(){
     int choice;
-    while (true){
+    while (choice!=0){
         ShowMenu();
         cin>>choice;
+        cin.ignore();
 
         if (cin.fail()){
             cin.clear();
@@ -357,11 +358,15 @@ void LibrarySystem::Run(){
             case 8:     ShowReaderRecords();        break;
             case 9:     SaveToFile();               break;
             case 10:    LoadFromFile();             break;
-            case 0:     cout<<"感谢使用，再见！"<<endl; return;
+            case 0:     cout<<"感谢使用，再见！"<<endl; break;
 
             default:
             cout<<"无效选项，请重新输入(0-10)。"<<endl;
         }
+        cout<<endl;
+        cout<<"\n请按回车继续......"<<endl;
+        cin.ignore();
+        system("cls");
     }
 }
 
@@ -375,8 +380,11 @@ void LibrarySystem::AddBook(){
         cin>>id;
 
         if (FindBook(id) != nullptr){
-        cout<<"错误：书号"<<id<<"已存在，添加失败！"<<endl;
-        flag = false;
+            cout<<"错误：书号"<<id<<"已存在，添加失败！"<<endl;
+            flag = false;
+        }else if(id.length()!=13){
+            cout<<"错误：书号位数为13位，请重新输入！"<<endl;
+            flag = false;
         }
     }while(!flag);
 
@@ -393,7 +401,7 @@ void LibrarySystem::AddBook(){
 
     
     cout<<"请输入作者:";
-    cin>>author;
+    getline(cin,author);
 
     cout<<"请输入图书类别：";
     cin>>category;
