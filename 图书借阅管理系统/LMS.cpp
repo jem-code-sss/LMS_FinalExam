@@ -185,9 +185,29 @@ Book Book::FromCSV(const string& line) {
 //-------------------Reader成员函数-----------------
 Reader::Reader(string id,string n, string tel):readerId(id), name(n), phone(tel) {}
 void Reader::InputReader(){
-    cout<<"请输入读者号：";     cin>>readerId;  cin.ignore();
-    cout<<"请输入姓名：";       getline(cin,name);
-    cout<<"请输入电话：";      cin>>phone;
+    cout<<"请输入读者号："; cin>>readerId;  cin.ignore();
+    cout<<"请输入姓名：";   getline(cin,name);
+    bool phoneVaild;
+    do{
+        phoneVaild = true;
+        cout<<"请输入电话：（11位数字，以1开头）：";
+        cin>>phone;
+
+        if (phone.length() != 11 && phone[0] != '1'){
+            phoneVaild = false;
+        }else{
+            for (char c : phone){
+                if ( c < '0' || c > '9'){
+                    phoneVaild = false;
+                    break;
+                }
+            }
+        }
+
+        if (!phoneVaild){
+            cout<<"错误：手机号格式正确，请重新输入！"<<endl;
+        }
+    }while(!phoneVaild);
 }
 
 void Reader::PrintReader() const{
@@ -709,9 +729,20 @@ void LibrarySystem::ReturnBook(){
 }
 
 void LibrarySystem::SortBooksByPopularity(){
-    sort(books.begin() ,books.end(), [](const Book& a,const Book& b){
-        return a.GetBorrowTimes() > b.GetBorrowTimes();
-    });
+    for ( size_t i = 0; i < books.size(); i++){
+        size_t maxIdx = i;
+        for (size_t j = i + 1; j < books.size(); j++){
+            if (books[j].GetBorrowTimes() > books[maxIdx].GetBorrowTimes()){
+                maxIdx = j;
+            }
+        }
+        if (maxIdx != i){
+            swap(books[i],books[maxIdx]);
+        }
+    }
+    // sort(books.begin() ,books.end(), [](const Book& a,const Book& b){
+    //     return a.GetBorrowTimes() > b.GetBorrowTimes();
+    // });
     cout<<"图书已按照热门程度排序："<<endl;
     DisplayAllBooks();
 }
@@ -768,7 +799,9 @@ void LibrarySystem:: LoadFromFile(){
     string line;
     int loadBooks = 0, loadReaders = 0, loadRecords = 0;
     int skipBooks = 0, skipReaders = 0, skipRecords = 0;
-//----------- 1. 载入 books.csv -----------
+
+    //----------- 1. 载入 books.csv -----------
+
     ifstream fbooks("books.csv");
     if (!fbooks.is_open()){
         cout<<"警告：未找到 books.csv，跳过图书载入。"<<endl;
@@ -796,6 +829,7 @@ void LibrarySystem:: LoadFromFile(){
     }
 
 //----------- 2. 载入 readers.csv -----------
+
     ifstream freaders("readers.csv");
     if (!freaders.is_open()){
         cout<<"警告：未找到 readers.csv，跳过读者载入。"<<endl;
@@ -836,6 +870,7 @@ void LibrarySystem:: LoadFromFile(){
     }
 
 //----------- 3. 载入 borrow_records.csv -----------
+
     ifstream frecords("borrow_records.csv");
     if (!frecords.is_open()){
         cout<<"警告：未找到 borrow_records.csv，跳过记录载入。"<<endl;
