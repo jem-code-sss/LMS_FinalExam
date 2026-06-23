@@ -393,12 +393,12 @@ void LibrarySystem::AddBook(){
             flag = false;
         }
     }while(!flag);
+    cin.ignore();
 
     do{
         flag = true;
         cout<<"请输入书名：";
         getline(cin, title);
-        cin.ignore();
 
         if (title.empty()){
         cout<<"错误：书名不能为空，添加失败！"<<endl;
@@ -427,7 +427,15 @@ void LibrarySystem::AddBook(){
         flag = true;
         cout<<"请输入可借册数：";
         cin>>availableCount;
-        if (availableCount > totalCount) {
+        if (cin.fail()){
+            cin.clear();
+            cin.ignore(10000,'\n');
+            cout<<"错误：请输入数字！"<<endl;
+            flag = false;
+        }else if(availableCount < 0){
+            cout<<"错误：可惜册数不能为负数！"<<endl;
+            flag = false;
+        }else if (availableCount > totalCount) {
         cout << "错误：可借册数（" << availableCount
              << "）不能大于总册数（" << totalCount << "），添加失败！" << endl;
         flag = false;
