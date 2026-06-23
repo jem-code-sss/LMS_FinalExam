@@ -77,11 +77,14 @@ string Date::ToString() const{
 }
 
 Date Date::FromString(const string& s){
-    if (s.length() < 10) return Date();
-    int y = stoi(s.substr(0,4));
-    int m = stoi(s.substr(5,2));
-    int d = stoi(s.substr(8,2));
-    return Date(y,m,d);
+    if (s.length() < 10) return Date(0,0,0);
+    try{
+        int y = stoi(s.substr(0,4));
+        int m = stoi(s.substr(5,2));
+        int d = stoi(s.substr(8,2));
+        if (IsValid(y,m,d)) return Date(y,m,d);
+    } catch (...){}
+    return Date(0,0,0);
 }
 
 int Date:: GetYear() const{
@@ -117,16 +120,6 @@ void Book:: BorrowOne(){
 
 void Book::ReturnOne() {
     availableCount++;
-}
-
-void Book::InputBook() {
-    cout<<"请输入书号：";       cin>>bookId;
-    cout<<"请输入书名：";       cin>>title;
-    cout<<"请输入作者：";       cin>>author;
-    cout<<"请输入图书类别：";   cin>>category;
-    cout<<"请输入总册数：";     cin>>totalCount;
-    availableCount = totalCount;
-    borrowTimes = 0;
 }
 
 void Book::PrintBook() const{
@@ -191,8 +184,8 @@ Book Book::FromCSV(const string& line) {
 //-------------------Reader成员函数-----------------
 Reader::Reader(string id,string n, string tel):readerId(id), name(n), phone(tel) {}
 void Reader::InputReader(){
-    cout<<"请输入读者号：";     cin>>readerId;
-    cout<<"请输入姓名：";       cin>>name;
+    cout<<"请输入读者号：";     cin>>readerId;  cin.ignore();
+    cout<<"请输入姓名：";       getline(cin,name);
     cout<<"请输入电话：";      cin>>phone;
 }
 
@@ -251,9 +244,13 @@ int BorrowRecord::GetBorrowDays() const{
     return 0;
 }
 
-bool BorrowRecord::IsOverdue(int maxDays) const{
-    if (!hasReturnDate) return false;
-    return GetBorrowDays() > maxDays;
+bool BorrowRecord::IsOverdue(int maxDays, const Date& today) const{
+    if (hasReturnDate){
+        return GetBorrowDays() > maxDays;   
+    }else{
+        return borrowDate.DaysBetween(today) > maxDays;
+    }
+
 }
 
 string BorrowRecord::GetRecordId() const{
@@ -334,7 +331,7 @@ void LibrarySystem::ShowMenu(){
 }
 
 void LibrarySystem::Run(){
-    int choice;
+    int choice = -1;
     while (choice!=0){
         ShowMenu();
         cin>>choice;
@@ -392,6 +389,7 @@ void LibrarySystem::AddBook(){
         flag = true;
         cout<<"请输入书名：";
         cin>>title;
+        cin.ignore();
 
         if (title.empty()){
         cout<<"错误：书名不能为空，添加失败！"<<endl;
@@ -684,7 +682,7 @@ void LibrarySystem::ReturnBook(){
     cout<<"记录号："<<targetRecord->GetRecordId()<<endl;
     cout<<"借阅天数："<<days<<"天"<<endl;
 
-    if (targetRecord->IsOverdue(maxDays)){
+    if (targetRecord->IsOverdue(maxDays, returnDate)){
         cout<<"已逾期！逾期"<<(days - maxDays)<<"天"<<endl;
     }else{
         cout<<"剩余"<<(maxDays - days)<<"天"<<endl;
@@ -847,13 +845,6 @@ Book* LibrarySystem::FindBook(const string& bookId){
 Reader* LibrarySystem:: FindReader(const string& readerId){
     for(auto& r: readers){
         if(r->GetReaderId() == readerId) return r;
-    }
-    return nullptr;
-}
-
-BorrowRecord* LibrarySystem::FindRecord(const string& recordId){
-    for(auto& rec: records){
-        if(rec.GetRecordId() == recordId) return &rec; 
     }
     return nullptr;
 }

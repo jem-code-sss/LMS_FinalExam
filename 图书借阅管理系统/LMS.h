@@ -49,7 +49,6 @@ public:
     void BorrowOne();
     void ReturnOne();
 
-    void InputBook();
     void PrintBook() const;
 
     string GetBookId() const;
@@ -123,7 +122,7 @@ public:
     bool SetReturnDate(const Date& d);
 
     int GetBorrowDays() const;
-    bool IsOverdue(int maxDays) const;
+    bool IsOverdue(int maxDays, const Date& today) const;
 
     string GetRecordId() const;
     string GetBookId() const;
@@ -173,7 +172,6 @@ public:
 
     Book* FindBook(const string& bookId);
     Reader* FindReader(const string& readerId);
-    BorrowRecord* FindRecord(const string& recordId);
     string GenerateRecordId();
 };
 
