@@ -174,10 +174,15 @@ Book Book::FromCSV(const string& line) {
     getline(ss,availStr,',');
     getline(ss,timesStr,',');
 
-    int total = stoi(totalStr);
-    int avail = stoi(availStr);
-    int times = stoi(timesStr);
-    return Book(id, t, a, c, total, avail, times);
+    try{
+        int total = stoi(totalStr);
+        int avail = stoi(availStr);
+        int times = stoi(timesStr);
+        return Book(id, t, a, c, total, avail, times);
+    }catch(...){
+        return Book("ERROR","","","",0,0,0);
+    }
+    
 }
 
 //-------------------------------------------------
@@ -224,8 +229,8 @@ TeacherReader::TeacherReader(string id, string n, string tel)
 
 //------------------------------------------
 //----------BorrowRecord成员函数-------------
-BorrowRecord::BorrowRecord (string rid, string bid, string readerId, const Date& bDate)
-: recordId(rid), bookId(bid),readerId(readerId),
+BorrowRecord::BorrowRecord (string rid, string bid, string rId, const Date& bDate)
+: recordId(rid), bookId(bid),readerId(rId),
 borrowDate(bDate), status("BORROWED"), hasReturnDate(false) {}
 
 bool BorrowRecord::SetReturnDate(const Date& d){
@@ -331,8 +336,8 @@ void LibrarySystem::ShowMenu(){
 }
 
 void LibrarySystem::Run(){
-    int choice = -1;
-    while (choice!=0){
+    int choice;
+    while (true){
         ShowMenu();
         cin>>choice;
         cin.ignore();
@@ -355,7 +360,7 @@ void LibrarySystem::Run(){
             case 8:     ShowReaderRecords();        break;
             case 9:     SaveToFile();               break;
             case 10:    LoadFromFile();             break;
-            case 0:     cout<<"感谢使用，再见！"<<endl; break;
+            case 0:     cout<<"感谢使用，再见！"<<endl; SaveToFile(); return;
 
             default:
             cout<<"无效选项，请重新输入(0-10)。"<<endl;
@@ -363,7 +368,11 @@ void LibrarySystem::Run(){
         cout<<endl;
         cout<<"\n请按回车继续......"<<endl;
         cin.ignore();
+        #ifdef _WIN32
         system("cls");
+        #else
+        system("clear");
+        #endif
     }
 }
 
@@ -388,7 +397,7 @@ void LibrarySystem::AddBook(){
     do{
         flag = true;
         cout<<"请输入书名：";
-        cin>>title;
+        getline(cin, title);
         cin.ignore();
 
         if (title.empty()){

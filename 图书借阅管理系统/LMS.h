@@ -117,7 +117,7 @@ private:
     bool hasReturnDate;
 
 public:
-    BorrowRecord(string rid, string bid, string readerId, const Date& bDate);
+    BorrowRecord(string rid, string bid, string rId, const Date& bDate);
 
     bool SetReturnDate(const Date& d);
 
