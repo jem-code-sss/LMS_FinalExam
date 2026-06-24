@@ -187,27 +187,27 @@ Reader::Reader(string id,string n, string tel):readerId(id), name(n), phone(tel)
 void Reader::InputReader(){
     cout<<"请输入读者号："; cin>>readerId;  cin.ignore();
     cout<<"请输入姓名：";   getline(cin,name);
-    bool phoneVaild;
+    bool phoneValid;
     do{
-        phoneVaild = true;
+        phoneValid = true;
         cout<<"请输入电话：（11位数字，以1开头）：";
         cin>>phone;
 
-        if (phone.length() != 11 && phone[0] != '1'){
-            phoneVaild = false;
+        if (phone.length() != 11 || phone[0] != '1'){
+            phoneValid = false;
         }else{
             for (char c : phone){
                 if ( c < '0' || c > '9'){
-                    phoneVaild = false;
+                    phoneValid = false;
                     break;
                 }
             }
         }
 
-        if (!phoneVaild){
-            cout<<"错误：手机号格式正确，请重新输入！"<<endl;
+        if (!phoneValid){
+            cout<<"错误：手机号格式不正确，请重新输入！"<<endl;
         }
-    }while(!phoneVaild);
+    }while(!phoneValid);
 }
 
 void Reader::PrintReader() const{
@@ -376,7 +376,7 @@ void LibrarySystem::Run(){
             case 8:     ShowReaderRecords();        break;
             case 9:     SaveToFile();               break;
             case 10:    LoadFromFile();             break;
-            case 0:     cout<<"感谢使用，再见！"<<endl; SaveToFile(); return;
+            case 0:     cout<<"感谢使用，再见！"<<endl; return;
 
             default:
             cout<<"无效选项，请重新输入(0-10)。"<<endl;
@@ -812,7 +812,22 @@ void LibrarySystem:: LoadFromFile(){
             lineNum++;
             if (line.empty()) continue;
             try{
-                books.push_back(Book::FromCSV(line));
+                Book book = Book::FromCSV(line);
+
+                //主键重复
+                if (FindBook(book.GetBookId()) != nullptr){
+                    cout<<"警告：books.csv 第"<<lineNum<<"行 书号重复，已跳过。"<<endl;
+                    continue;
+                }
+
+                //库存非法
+                if (book.GetTotalCount() < 0 || book.GetAvailableCount() < 0 ||
+                    book.GetAvailableCount() > book.GetTotalCount()){
+                        cout<<"警告：books.csv 第"<<lineNum<<"行 库存数据非法，已跳过。"<<endl;
+                        continue;
+                }
+
+                books.push_back(book);
                 loadBooks++;
             } catch (...){
                 skipBooks++;
@@ -846,6 +861,12 @@ void LibrarySystem:: LoadFromFile(){
                 getline(ss,name,',');
                 getline(ss,phone,',');
                 getline(ss,type,',');
+
+                //主键重复
+                if (FindReader(id) != nullptr){
+                    cout<<"警告：readers.csv 第"<<lineNum<<"行 读者号重复，已跳过。"<<endl;
+                    continue;
+                }
 
                 if (type == "教师"){
                     readers.push_back(new TeacherReader(id, name, phone));
@@ -891,12 +912,42 @@ void LibrarySystem:: LoadFromFile(){
                 getline(ss,returnStr,',');
                 getline(ss,status,',');
 
+                //主键重复
+                if (FindRecord(rid) != nullptr){
+                    cout<<"警告：borrow_records.csv 第"<<lineNum<<"行 记录号重复，已跳过。"<<endl;
+                    continue;
+                }
+
+                //关联错误：bookId 不存在
+                if (FindBook(bid) == nullptr){
+                    cout<<"警告：borrow_records.csv 第"<<lineNum<<"行 bookId（"<<bid<<"）不存在，已跳过。"<<endl;
+                    continue;
+                }
+
+                //关联错误：readerId 不存在
+                if (FindReader(readerId) == nullptr){
+                    cout<<"警告：borrow_records.csv 第"<<lineNum<<"行 readerId（"<<readerId<<"）不存在，已跳过。"<<endl;
+                    continue;
+                }
+
                 Date borrowDate = Date::FromString(borrowStr);
+                if (!borrowDate.IsValid()){
+                    cout<<"警告：borrow_records.csv 第"<<lineNum<<"行 借阅日期非法，已跳过。"<<endl;
+                    continue;
+                }
+
                 BorrowRecord rec(rid, bid, readerId, borrowDate);
 
                 if (returnStr != "NONE"){
                     Date retDate = Date::FromString(returnStr);
-                    rec.SetReturnDate(retDate);
+                    if (!retDate.IsValid()){
+                        cout<<"警告：borrow_records.csv 第"<<lineNum<<"行 归还日期非法，已跳过。"<<endl;
+                        continue;
+                    }
+                    if (!rec.SetReturnDate(retDate)){
+                        cout<<"警告：borrow_records.csv 第"<<lineNum<<"行 归还日期早于借阅日期，已跳过。"<<endl;
+                        continue;
+                    }
                 }
 
                 records.push_back(rec);
@@ -934,6 +985,13 @@ Book* LibrarySystem::FindBook(const string& bookId){
 Reader* LibrarySystem:: FindReader(const string& readerId){
     for(auto& r: readers){
         if(r->GetReaderId() == readerId) return r;
+    }
+    return nullptr;
+}
+
+BorrowRecord* LibrarySystem::FindRecord(const string& recordId){
+    for(auto& rec: records){
+        if(rec.GetRecordId() == recordId) return &rec; 
     }
     return nullptr;
 }

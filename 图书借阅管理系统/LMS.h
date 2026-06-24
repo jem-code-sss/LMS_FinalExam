@@ -172,6 +172,7 @@ public:
 
     Book* FindBook(const string& bookId);
     Reader* FindReader(const string& readerId);
+    BorrowRecord* FindRecord(const string& recordId);
     string GenerateRecordId();
 };
 
