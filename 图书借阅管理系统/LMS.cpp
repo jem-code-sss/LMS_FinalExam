@@ -190,7 +190,7 @@ void Reader::InputReader(){
     bool phoneValid;
     do{
         phoneValid = true;
-        cout<<"请输入电话：（11位数字，以1开头）：";
+        cout<<"请输入电话（11位数字，以1开头）：";
         cin>>phone;
 
         if (phone.length() != 11 || phone[0] != '1'){
@@ -508,6 +508,8 @@ void LibrarySystem::SearchBook(){
     if (!found){
         cout<<"未找到匹配的图书。"<<endl;
     }
+    cin.ignore();
+
 }
 
 void LibrarySystem::DisplayAllBooks(){
@@ -551,6 +553,9 @@ void LibrarySystem::AddReader(){
     cout<<"添加成功！"<<endl;
     cout<<"读者号："<<r->GetReaderId()<<endl;
     cout<<"姓名："<<r->GetName()<<endl;
+
+    cin.ignore();
+
 }
 
 void LibrarySystem:: ShowReaderRecords(){
@@ -581,6 +586,7 @@ void LibrarySystem:: ShowReaderRecords(){
     if (!found){
         cout<<"暂无借阅记录。"<<endl;
     }
+    cin.ignore();
 }
 
 void LibrarySystem::BorrowBook(){
@@ -589,25 +595,32 @@ void LibrarySystem::BorrowBook(){
 //----------- 1. 查找图书 --------------
     cout<<"请输入要借阅的图书书号："<<endl;
     cin>>bookId;
+    cin.ignore();
 
     Book* book = FindBook(bookId);
     if (book == nullptr){
         cout<<"错误：书号 "<<bookId<<" 不存在！"<<endl;
         return;
     }
+    cout<<"---------------------------------------"<<endl;
+
     cout<<"请确认图书信息："<<endl;
     book->PrintBook();
-    
+    cout<<"---------------------------------------"<<endl;
+
 //----------- 2. 查找读者 --------------
 
-    cout<<"请输入读者号"<<endl;
+    cout<<"请输入读者号："<<endl;
     cin>>readerId;
+    cin.ignore();
+
     Reader* reader = FindReader(readerId);
     if (reader == nullptr){
         cout<<"错误：读者号 "<<readerId<<" 不存在！"<<endl;
         return;
     }
     cout<<"读者："<<reader->GetTypeName()<<" "<<reader->GetName()<<endl;
+    cout<<"---------------------------------------"<<endl;
 
 //----------- 3. 库存检查 --------------
 
@@ -635,12 +648,13 @@ void LibrarySystem::BorrowBook(){
 
     cout<<"请输入借阅日期（格式：yyyy-mm-dd）：" ;
     cin>>dateStr;
-
+    cin.ignore();
     Date borrowDate = Date::FromString(dateStr);
     if (!borrowDate.IsValid()){
         cout<<"错误：日期格式不正确或不存在！"<<endl;
         return;
     }
+    cout<<"---------------------------------------"<<endl;
 
 //----------- 6. 创建借阅记录 --------------
 
@@ -653,29 +667,37 @@ void LibrarySystem::BorrowBook(){
     cout<<"书号："<<bookId<<" 书名："<< book->GetTitle()<<endl;
     cout<<"借阅日期："<<borrowDate.ToString()<<endl;
     cout<<"应还期限："<<reader->GetMaxBorrowDays()<<"天"<<endl;
+    
 }
 
 void LibrarySystem::ReturnBook(){
     string bookId,readerId,dateStr;
     cout<<"请输入要归还的图书书号："<<endl;
     cin>>bookId;
+    cin.ignore();
 
     Book* book = FindBook(bookId);
     if (book == nullptr){
         cout<<"错误：书号 "<<bookId<<" 不存在！"<<endl;
         return;
     }
+    cout<<"---------------------------------------"<<endl;
+
     book->PrintBook();
-    
+    cout<<"---------------------------------------"<<endl;
+
 //----------- 2. 查找读者 --------------
 
-    cout<<"请输入读者号"<<endl;
+    cout<<"请输入读者号："<<endl;
     cin>>readerId;
+    cin.ignore();
+
     Reader* reader = FindReader(readerId);
     if (reader == nullptr){
         cout<<"错误：读者号 "<<readerId<<" 不存在！"<<endl;
         return;
     }
+    cout<<"---------------------------------------"<<endl;
 
 //----------- 3. 查找借阅记录 --------------
     BorrowRecord* targetRecord = nullptr;
@@ -695,11 +717,13 @@ void LibrarySystem::ReturnBook(){
     }
     cout<<"借阅记录如下："<<endl;
     targetRecord->Print();
+    cout<<"---------------------------------------"<<endl;
 
 //----------- 4. 输入并校验归还日期 --------------
 
     cout<<"请输入归还日期（格式：yyyy-mm-dd）：" ;
     cin>>dateStr;
+    cin.ignore();
 
     Date returnDate = Date::FromString(dateStr);
     if (!returnDate.IsValid()){
@@ -711,6 +735,7 @@ void LibrarySystem::ReturnBook(){
 
     if (!targetRecord->SetReturnDate(returnDate)) return;
     book->ReturnOne();
+    cout<<"---------------------------------------"<<endl;
 
 //----------- 6. 显示 --------------
     int days = targetRecord->GetBorrowDays();
@@ -788,6 +813,8 @@ void LibrarySystem::SaveToFile(){
     cout<<"已保存"<<records.size()<<"条借阅记录到borrow_records.csv"<<endl;
 
     cout<<"数据全部保存完毕！"<<endl;
+    cin.ignore();
+
 }
 
 void LibrarySystem:: LoadFromFile(){
