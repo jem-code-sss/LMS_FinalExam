@@ -457,6 +457,7 @@ void LibrarySystem::AddBook(){
         flag = false;
         }
     }while(!flag); 
+
     books.push_back(Book(id, title, author, category, totalCount, availableCount));
     cout<<"添加成功！"<<endl;
     cout<<"书号："<<id<<endl;
@@ -469,13 +470,15 @@ void LibrarySystem::SearchBook(){
     cout<<"请选择查询方式："<<endl;
     cout<<"1 - 按书号查询"<<endl;
     cout<<"2 - 按书名查询"<<endl;
+    cout<<"3 - 按作者查询"<<endl;
     cout<<"请输入：";
     cin>>choice;
+    cout<<"--------------------------"<<endl;
 
-    if (cin.fail()|| (choice != 1 && choice != 2)){
+    if (cin.fail()|| (choice != 1 && choice != 2 && choice != 3)){
         cin.clear();
         cin.ignore(10000,'\n');
-        cout<<"输入无效，请选择 1 或 2 。"<<endl;
+        cout<<"输入无效，请选择 1 / 2 / 3。"<<endl;
         return;
     }
 
@@ -491,13 +494,25 @@ void LibrarySystem::SearchBook(){
             book->PrintBook();
             found = true;
         }
-    }else{
+    }else if (choice == 2){
         string keyword;
         cout<<"请输入书名关键字：";
         cin>>keyword;
 
         for(auto& book: books){
             if(book.GetTitle().find(keyword) != string::npos){
+                book.PrintBook();
+                cout<<"--------------------------"<<endl;
+                found = true;
+            }
+        }
+    }else{
+        string author;
+        cout<<"请输入作者：";
+        cin>>author;
+
+        for(auto& book: books){
+            if(book.GetAuthor().find(author) != string::npos){
                 book.PrintBook();
                 cout<<"--------------------------"<<endl;
                 found = true;
@@ -593,7 +608,7 @@ void LibrarySystem::BorrowBook(){
     string bookId,readerId,dateStr;
 
 //----------- 1. 查找图书 --------------
-    cout<<"请输入要借阅的图书书号："<<endl;
+    cout<<"请输入要借阅的图书书号：";
     cin>>bookId;
     cin.ignore();
 
@@ -610,7 +625,7 @@ void LibrarySystem::BorrowBook(){
 
 //----------- 2. 查找读者 --------------
 
-    cout<<"请输入读者号："<<endl;
+    cout<<"请输入读者号：";
     cin>>readerId;
     cin.ignore();
 
@@ -672,7 +687,7 @@ void LibrarySystem::BorrowBook(){
 
 void LibrarySystem::ReturnBook(){
     string bookId,readerId,dateStr;
-    cout<<"请输入要归还的图书书号："<<endl;
+    cout<<"请输入要归还的图书书号：";
     cin>>bookId;
     cin.ignore();
 
@@ -688,7 +703,7 @@ void LibrarySystem::ReturnBook(){
 
 //----------- 2. 查找读者 --------------
 
-    cout<<"请输入读者号："<<endl;
+    cout<<"请输入读者号：";
     cin>>readerId;
     cin.ignore();
 
@@ -754,6 +769,7 @@ void LibrarySystem::ReturnBook(){
 }
 
 void LibrarySystem::SortBooksByPopularity(){
+    //选择排序
     for ( size_t i = 0; i < books.size(); i++){
         size_t maxIdx = i;
         for (size_t j = i + 1; j < books.size(); j++){
