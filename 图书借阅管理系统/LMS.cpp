@@ -589,6 +589,13 @@ void LibrarySystem:: ShowReaderRecords(){
     cout<<"最大可借："<<reader->GetMaxBorrowCount()<<"本"<<endl;
     cout<<"借阅期限："<<reader->GetMaxBorrowDays()<<"天"<<endl;
 
+    //添加显示当前已借数量
+    int nowBorrowed = 0;
+    for (auto& rec : records){
+        if (rec.GetReaderId() == readerId && !rec.IsReturned()) nowBorrowed++;
+    }
+    cout<<"当前已借："<<nowBorrowed<<"本"<<endl;
+
     cout<<"\n====== 借阅记录 ======"<<endl;
     bool found = false;
     for (auto& rec: records){
@@ -682,7 +689,14 @@ void LibrarySystem::BorrowBook(){
     cout<<"书号："<<bookId<<" 书名："<< book->GetTitle()<<endl;
     cout<<"借阅日期："<<borrowDate.ToString()<<endl;
     cout<<"应还期限："<<reader->GetMaxBorrowDays()<<"天"<<endl;
-    
+
+    //添加显示当前已借数量
+    int nowBorrowed = 0;
+    for (auto& rec : records){
+        if (rec.GetReaderId() == readerId && !rec.IsReturned()) nowBorrowed++;
+    }
+    cout<<"当前已借："<<nowBorrowed<<"本（上限"<<reader->GetMaxBorrowCount()<<"本）"<<endl;
+
 }
 
 void LibrarySystem::ReturnBook(){
@@ -759,6 +773,13 @@ void LibrarySystem::ReturnBook(){
     cout<<"还书成功！"<<endl;
     cout<<"记录号："<<targetRecord->GetRecordId()<<endl;
     cout<<"借阅天数："<<days<<"天"<<endl;
+
+    //添加显示当前已借数量
+    int nowBorrowed = 0;
+    for (auto& rec : records){
+        if (rec.GetReaderId() == readerId && !rec.IsReturned()) nowBorrowed++;
+    }
+    cout<<"当前已借："<<nowBorrowed<<"本（上限"<<reader->GetMaxBorrowCount()<<"本）"<<endl;
 
     if (targetRecord->IsOverdue(maxDays, returnDate)){
         cout<<"已逾期！逾期"<<(days - maxDays)<<"天"<<endl;
